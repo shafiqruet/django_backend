@@ -1,1 +1,2 @@
-# django_backend
+# crud_django
+Django REST with CRUD table
