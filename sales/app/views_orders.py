@@ -52,10 +52,9 @@ def save_order(request, order, success_status):
         date = datetime.datetime.now()
 
     if len(errors) > 0:
-        return HttpResponse(json.dumps(
-            {
-                "errors": errors
-            }), status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponse(
+            json.dumps({"errors": errors}), status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
         order.date = date
@@ -63,18 +62,21 @@ def save_order(request, order, success_status):
         order.price = price
         order.quantity = quantity
         order.amount = price * quantity
+        order.created_at = datetime.now()
         order.save()
     except Exception as e:
-        return HttpResponse(json.dumps(
-            {
-                "errors": {"Order": str(e)}
-            }), status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponse(
+            json.dumps({"errors": {"Order": str(e)}}),
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    return HttpResponse(json.dumps({"data": serialize_order(order)}), status=success_status)
+    return HttpResponse(
+        json.dumps({"data": serialize_order(order)}), status=success_status
+    )
 
 
 @csrf_exempt
-@api_view(['GET', 'POST'])
+@api_view(["GET", "POST"])
 def orders(request):
 
     if request.method == "GET":
@@ -85,34 +87,48 @@ def orders(request):
         page_size = int(request.GET.get("page_size", "10"))
         page_no = int(request.GET.get("page_no", "0"))
         orders_data = list(
-            orders_data[page_no * page_size:page_no * page_size + page_size])
+            orders_data[page_no * page_size : page_no * page_size + page_size]
+        )
 
         orders_data = [serialize_order(order) for order in orders_data]
-        return HttpResponse(json.dumps({"count": orders_count, "data": orders_data}), status=status.HTTP_200_OK)
+        return HttpResponse(
+            json.dumps({"count": orders_count, "data": orders_data}),
+            status=status.HTTP_200_OK,
+        )
 
     if request.method == "POST":
         order = Order()
         return save_order(request, order, status.HTTP_201_CREATED)
 
-    return HttpResponse(json.dumps({"detail": "Wrong method"}), status=status.HTTP_501_NOT_IMPLEMENTED)
+    return HttpResponse(
+        json.dumps({"detail": "Wrong method"}), status=status.HTTP_501_NOT_IMPLEMENTED
+    )
 
 
 @csrf_exempt
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(["GET", "PUT", "DELETE"])
 def order(request, order_id):
     try:
         order = Order.objects.get(pk=order_id)
     except ObjectDoesNotExist:
-        return HttpResponse(json.dumps({"detail": "Not found"}), status=status.HTTP_404_NOT_FOUND)
+        return HttpResponse(
+            json.dumps({"detail": "Not found"}), status=status.HTTP_404_NOT_FOUND
+        )
 
     if request.method == "GET":
-        return HttpResponse(json.dumps({"data": serialize_order(order)}), status=status.HTTP_200_OK)
+        return HttpResponse(
+            json.dumps({"data": serialize_order(order)}), status=status.HTTP_200_OK
+        )
 
     if request.method == "PUT":
         return save_order(request, order, status.HTTP_200_OK)
 
     if request.method == "DELETE":
         order.delete()
-        return HttpResponse(json.dumps({"detail": "deleted"}), status=status.HTTP_410_GONE)
+        return HttpResponse(
+            json.dumps({"detail": "deleted"}), status=status.HTTP_410_GONE
+        )
 
-    return HttpResponse(json.dumps({"detail": "Wrong method"}), status=status.HTTP_501_NOT_IMPLEMENTED)
+    return HttpResponse(
+        json.dumps({"detail": "Wrong method"}), status=status.HTTP_501_NOT_IMPLEMENTED
+    )
