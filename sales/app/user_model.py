@@ -12,6 +12,7 @@ class User(models.Model):
     password = models.CharField(max_length=100)
     address = models.CharField(max_length=250)
     city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100, null=True)
     country = models.CharField(max_length=50)
     status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
