@@ -1,3 +1,4 @@
+from urllib import response
 from rest_framework.decorators import api_view
 from django.shortcuts import HttpResponse
 from rest_framework import status
@@ -5,7 +6,9 @@ from django.forms.models import model_to_dict
 from django.core.exceptions import ObjectDoesNotExist
 from app.user_model import User
 import json
-import datetime
+from datetime import datetime
+
+from app.serialize.user_serialize import UserSerializer
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -28,47 +31,18 @@ def serialize_user(user):
 @csrf_exempt
 def save_user(request, success_status):
 
-    user = User()
-
-    errors = []
-    first_name = request.data.get("first_name", "")
-    last_name = request.data.get("last_name", "")
-    email = request.data.get("email", "")
-    phone = request.data.get("phone", "")
-    password = request.data.get("password", "")
-    address = request.data.get("address", "")
-    city = request.data.get("city", "")
-    country = request.data.get("country", "")
-    if first_name == "":
-        errors.append({"first_name": "This field is required"})
-
-    if len(errors) > 0:
-        return HttpResponse("First Name error")
-
-    if len(errors) > 0:
-        return HttpResponse(
-            json.dumps({"errors": errors}), status=status.HTTP_400_BAD_REQUEST
-        )
-
     try:
-        user.first_name = first_name
-        user.last_name = last_name
-        user.email = email
-        user.phone = phone
-        user.password = password
-        user.address = address
-        user.city = city
-        user.country = country
-        user.created_at = datetime.now()
-        user.save()
+        response = UserSerializer(data=request.data)
+        if response.is_valid():
+            response.save()
+            return HttpResponse(
+                json.dumps({"data": response.data}), status=success_status
+            )
+
     except Exception as e:
         return HttpResponse(
             json.dumps({"errors": {"User": str(e)}}), status=status.HTTP_400_BAD_REQUEST
         )
-
-    return HttpResponse(
-        json.dumps({"data": serialize_user(user)}), status=success_status
-    )
 
 
 @csrf_exempt
@@ -90,10 +64,16 @@ def login(request):
             errors.append({"email": "This field is required"})
 
         try:
-            check_user = User.objects.filter(email=email, password=password).first()
+            check_user = User.objects.filter(email=email, password=password).values()
             if check_user:
                 return HttpResponse(
-                    json.dumps({"data": serialize_user(check_user)}), status.HTTP_200_OK
+                    json.dumps(
+                        {"data": list(check_user)},
+                        indent=1,
+                        sort_keys=True,
+                        default=str,
+                    ),
+                    status.HTTP_200_OK,
                 )
             else:
                 return HttpResponse(
@@ -109,15 +89,20 @@ def user_data(request, user_id):
 
     if request.method == "GET":
         errors = []
-        # user_id = request.data.get("user_id", "")
         if user_id == "":
             errors.append({"user_id": "This field is required"})
 
         try:
-            check_user = User.objects.filter(id=user_id).first()
+            check_user = User.objects.filter(id=user_id).values()
             if check_user:
                 return HttpResponse(
-                    json.dumps({"data": serialize_user(check_user)}), status.HTTP_200_OK
+                    json.dumps(
+                        {"data": list(check_user)},
+                        indent=1,
+                        sort_keys=True,
+                        default=str,
+                    ),
+                    status.HTTP_200_OK,
                 )
             else:
                 return HttpResponse(
